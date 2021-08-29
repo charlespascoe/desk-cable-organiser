@@ -1,15 +1,25 @@
-include <variables.scad>;
+$fn = $preview ? 50 : 150;
 
-$fn=100;
+collar_diameter = 62;
+collar_wall_thickness = 4;
+collar_depth = 80;
+collar_top_lip = 5;
+
+module mirror_copy(normal) {
+    children();
+
+    mirror(normal)
+    children();
+}
 
 module collar(
     diameter,
     depth,
     wall_thickness,
     top_lip,
-    standoff_size = 0.5,
-    standoff_height = 10,
-    standoff_count = 6
+    standoff_size = 0.8,
+    standoff_height = 30,
+    standoff_count = 8,
 ) {
     internal_diameter = diameter - 2*wall_thickness;
 
@@ -19,7 +29,11 @@ module collar(
 
         union() {
             cylinder(d=diameter, h=depth);
-            cylinder(d=diameter + 2*top_lip, h=wall_thickness);
+            cylinder(
+                d1=diameter + 2*top_lip,
+                d2=diameter + 2*top_lip + 2*wall_thickness,
+                h=wall_thickness
+            );
 
             if (standoff_size > 0) {
                 for (i = [0:standoff_count-1]) {
@@ -122,47 +136,74 @@ module clip_shaft(
     }
 }
 
-module cable_holder(collar_internal_diameter, collar_wall_thickness, tolerance=0.2) {
-    translate([0, 0, collar_wall_thickness])
-    cylinder(
-        d1=collar_internal_diameter - 2*tolerance,
-        d2=collar_internal_diameter - 5 - 2*tolerance,
-        h = 10
-    );
+module handle_cutout(diameter = 30, grip_thickness = 6) {
+    mirror_copy([1, 0, 0])
+    difference() {
+        resize([diameter, diameter, diameter/2])
+        sphere(d=diameter);
 
-    cylinder(
-        d1=collar_internal_diameter - 2*tolerance,
-        d2=collar_internal_diameter - 5 - 2*tolerance,
-        h = 10
-    );
+        translate([grip_thickness/2, 0, 0])
+        rotate([0, -10, 0])
+        translate([-diameter/2, 0, 0])
+        cube([diameter, diameter, diameter], center=true);
+    }
+}
 
-    cylinder(
-        d1=collar_internal_diameter + 2*collar_wall_thickness - 2*tolerance,
-        d2=collar_internal_diameter - 2*tolerance,
-        h=collar_wall_thickness
-    );
+module cable_slot_cutout(width = 20, height=40) {
+    linear_extrude(height = height)
+    hull() {
+        circle(d=width);
 
-    clip_shaft();
+        translate([100, 0])
+        square([width, width], center=true);
+    }
+}
+
+module cable_holder(
+    collar_internal_diameter = collar_diameter - 2*collar_wall_thickness,
+    collar_wall_thickness = collar_wall_thickness,
+    clip_shaft_diameter = 20,
+    flat_edge_height = 20,
+    taper_height = 20,
+    tolerance = 0.2,
+) {
+    difference() {
+        union() {
+            translate([0, 0, collar_wall_thickness])
+            cylinder(
+                d = collar_internal_diameter - 2*tolerance,
+                h = flat_edge_height
+            );
+
+            translate([0, 0, collar_wall_thickness + flat_edge_height])
+            cylinder(
+                d1=collar_internal_diameter - 2*tolerance,
+                d2= clip_shaft_diameter,
+                h = taper_height
+            );
+
+            cylinder(
+                d1=collar_internal_diameter + 2*collar_wall_thickness - 2*tolerance,
+                d2=collar_internal_diameter - 2*tolerance,
+                h=collar_wall_thickness
+            );
+
+            clip_shaft(diameter = clip_shaft_diameter);
+        }
+
+        rotate([0, 0, 90])
+        handle_cutout();
+
+        translate([collar_internal_diameter/2, 0, -1])
+        cable_slot_cutout();
+    }
 }
 
 /* collar( */
 /*     collar_diameter, */
-/*     /1* collar_depth, *1/ */
-/*     15, */
+/*     collar_depth, */
 /*     collar_wall_thickness, */
 /*     collar_top_lip, */
-/*     standoff_size = 1, */
-/*     standoff_height = 6, */
-/*     standoff_count = 8 */
 /* ); */
 
-/* cable_holder( */
-/*     collar_diameter - 2*collar_wall_thickness, */
-/*     collar_wall_thickness */
-/* ); */
-
-/* cable_clip(); */
-
-clip_shaft();
-
-/* cable_clip_2(); */
+/* cable_holder(); */
