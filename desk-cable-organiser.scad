@@ -1,9 +1,10 @@
 $fn = $preview ? 50 : 150;
 
-collar_diameter = 62;
+collar_diameter = 79;
 collar_wall_thickness = 4;
 collar_depth = 80;
-collar_top_lip = 5;
+collar_rim_size = 5;
+collar_rim_height = 2.5;
 
 module mirror_copy(normal) {
     children();
@@ -16,33 +17,34 @@ module collar(
     diameter,
     depth,
     wall_thickness,
-    top_lip,
+    rim_size,
+    rim_height,
     standoff_size = 0.8,
     standoff_height = 30,
     standoff_count = 8,
 ) {
     internal_diameter = diameter - 2*wall_thickness;
 
-    $fn=400;
+    $fn = $preview ? 100 : 400;
 
     difference() {
 
         union() {
             cylinder(d=diameter, h=depth);
             cylinder(
-                d1=diameter + 2*top_lip,
-                d2=diameter + 2*top_lip + 2*wall_thickness,
-                h=wall_thickness
+                d1=diameter + 2*rim_size,
+                d2=diameter + 2*rim_size + 2*rim_height,
+                h=rim_height
             );
 
             if (standoff_size > 0) {
                 for (i = [0:standoff_count-1]) {
                     rotate([0, 0, i*360/standoff_count])
                     union() {
-                        translate([diameter/2, 0, wall_thickness])
+                        translate([diameter/2, 0, rim_height])
                         cylinder(r=standoff_size, h=standoff_height, $fn=50);
 
-                        translate([diameter/2, 0, wall_thickness + standoff_height])
+                        translate([diameter/2, 0, rim_height + standoff_height])
                         sphere(r=standoff_size, $fn=50);
                     }
                 }
@@ -50,7 +52,7 @@ module collar(
         }
 
         translate([0, 0, -1])
-        cylinder(d=diameter - 2*wall_thickness, h=depth + 2);
+        cylinder(d=internal_diameter, h=depth + 2);
 
         cylinder(d1=internal_diameter + 2*wall_thickness, d2 = internal_diameter, h=wall_thickness);
     }
